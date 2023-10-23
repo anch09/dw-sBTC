@@ -19,7 +19,7 @@ import {
 } from "sbtc";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils";
 import * as btc from "@scure/btc-signer";
-import { btcAddress, btcPublicKey, isUserSignedIn, setDevnetWallet, userSession, userStxAddress } from "../utils/connect-wallet";
+import { btcAddress, btcPublicKey, btcPublicKeyBytes, isUserSignedIn, setDevnetWallet, userSession, userStxAddress } from "../utils/connect-wallet";
 import { openSignatureRequestPopup } from "@stacks/connect-react";
 import { StacksTestnet, StacksMocknet } from "@stacks/network";
 import classnames from 'classnames';
@@ -64,6 +64,7 @@ const DepositWithdraw = () => {
     // if we are working via devnet we can use the helper to get the sbtc wallet address, which is associated with the first wallet
     const sbtcWalletAccount = await testnet.getBitcoinAccount(WALLET_00);
     const sbtcWalletAddress = sbtcWalletAccount.tr.address;
+    // const devWalletAccount = await testnet.getBitcoinAccount(WALLET_00, 1);
     const paymentPublicKey = bytesToHex(sbtcWalletAccount.tr.publicKey);
 
     const tx = await sbtcDepositHelper({
@@ -71,7 +72,7 @@ const DepositWithdraw = () => {
       // network: TESTNET,
       network: REGTEST,
       pegAddress: sbtcWalletAddress,
-      paymentPublicKey,
+      // paymentPublicKey,
       // pegAddress: 'tb1pte5zmd7qzj4hdu45lh9mmdm0nwq3z35pwnxmzkwld6y0a8g83nnq6ts2d4',
       // paymentPublicKey: '034a45bd09cc815da165b8987a7263a2c4111b79951562fc5c0989e9cdf5ceded2',
       // pegAddress: sbtcWalletAddress, //! This could be a mistake
@@ -109,18 +110,17 @@ const DepositWithdraw = () => {
     e.preventDefault();
 
     // First we need to sign a Stacks message to prove we own the sBTC
-    const uint8ArrayMessage = new TextEncoder().encode(sbtcWithdrawMessage({
+    // The sbtc paclage can help us format this
+    const message = sbtcWithdrawMessage({
       network: REGTEST,
       amountSats: amount,
       bitcoinAddress: btcAddress
-    }))
-    // The sbtc paclage can help us format this
-    const message = bytesToHex(uint8ArrayMessage);
+    });
     // Now we can use Leather to sign that message
     openSignatureRequestPopup({
       message,
       userSession,
-      network: new StacksTestnet(),
+      network: new StacksMocknet(),
       onFinish: (data) => {
         // Here we set the signature
         setSignature(data.signature);
@@ -166,7 +166,7 @@ const DepositWithdraw = () => {
       // comment this line out if working via devnet
       network: REGTEST,
       pegAddress: sbtcWalletAddress,
-      paymentPublicKey,
+      // paymentPublicKey,
       // sbtcWalletAddress,
       bitcoinAddress: btcAddress,
       amountSats: amount,
@@ -192,7 +192,8 @@ const DepositWithdraw = () => {
 
   const setBalancesState = async () => {
     if(isUserSignedIn) {
-      const sbtc_balance = await testnet.getSbtcBalance({holderAddress: userStxAddress, sbtcContract: `${userStxAddress}.asset`});
+      const walletDeployer = (await testnet.getStacksAccount(WALLET_00)).address;
+      const sbtc_balance = await testnet.getSbtcBalance({holderAddress: userStxAddress, sbtcContract: `${walletDeployer}.asset`});
       const btc_balance = await testnet.getBalance(btcAddress);
       setBalances({
         sbtc_balance: Number(sbtc_balance) / btcInSats,

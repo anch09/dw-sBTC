@@ -1,7 +1,7 @@
 import type { AuthOptions, StacksProvider } from '@stacks/connect-react';
 import { AppConfig, UserSession, showConnect } from '@stacks/connect-react';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime.d';
-import { DevEnvHelper, WALLET_00 } from 'sbtc';
+import { DevEnvHelper, WALLET_00, WALLET_01 } from 'sbtc';
 
 const appConfig = new AppConfig(['store_write', 'publish_data']);
 
@@ -12,6 +12,7 @@ export let userStxAddress = isUserSignedIn
   : '';
 export let btcAddress: string;
 export let btcPublicKey: string;
+export let btcPublicKeyBytes: Uint8Array;
 
 
 export const authOptions: AuthOptions = {
@@ -25,9 +26,10 @@ export const authOptions: AuthOptions = {
 
 export const setDevnetWallet = async () => {
   const testnet = new DevEnvHelper();
-  const bitcoinAccountA = await testnet.getBitcoinAccount(WALLET_00);
+  const bitcoinAccountA = await testnet.getBitcoinAccount(WALLET_00, 1);
   btcAddress = bitcoinAccountA.wpkh.address;
   btcPublicKey = bitcoinAccountA.publicKey.buffer.toString();
+  btcPublicKeyBytes = bitcoinAccountA.publicKey;
 }
 
 export const authenticate = (
